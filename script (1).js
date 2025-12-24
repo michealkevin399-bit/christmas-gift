@@ -43,7 +43,7 @@ draw();
 
 // Background music controls
 const bgm = new Audio();
-bgm.src = 'assets/bgm.mp3';
+bgm.src = '/assets/bgm.mp3';
 bgm.loop = true;
 bgm.volume = 0.28;
 bgm.preload = 'auto';
