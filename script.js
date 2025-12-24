@@ -41,53 +41,55 @@ function draw() {
 }
 draw();
 
-// Background music controls
+// --- Persistent Music Logic ---
 const bgm = new Audio();
-bgm.src = 'assets/bgm.mp3'; // ENSURE THIS FOLDER AND FILE EXIST ON GITHUB
+bgm.src = 'assets/bgm.mp3'; // Must match your folder
 bgm.loop = true;
-bgm.volume = 0.40; 
-bgm.preload = 'auto';
-let musicPlaying = false;
+bgm.volume = 0.35;
 
-function updateMusicButton() {
+let musicPlaying = localStorage.getItem('bgmPlaying') === '1';
+
+function updateButton() {
   const btn = document.getElementById('music-toggle');
-  if (!btn) return;
-  btn.textContent = musicPlaying ? '🔊 Music ON' : '🔈 Music OFF';
+  if (btn) btn.textContent = bgm.paused ? '🔈 Music OFF' : '🔊 Music ON';
 }
 
+// Sync music time across pages
+const savedTime = localStorage.getItem('bgmTime');
+if (savedTime) bgm.currentTime = parseFloat(savedTime);
+
+setInterval(() => {
+  if (!bgm.paused) localStorage.setItem('bgmTime', bgm.currentTime);
+}, 1000);
+
 function playMusic() {
-  if (!musicPlaying) {
-    bgm.play().then(() => {
-      musicPlaying = true;
-      updateMusicButton();
-      localStorage.setItem('bgmPlaying', '1');
-    }).catch(e => console.log("Playback waiting for interaction."));
-  }
+  bgm.play().then(() => {
+    localStorage.setItem('bgmPlaying', '1');
+    updateButton();
+  }).catch(() => {
+    console.log("Waiting for user interaction...");
+  });
 }
 
 function toggleMusic() {
-  if (musicPlaying) {
-    bgm.pause();
-    musicPlaying = false;
-  } else {
+  if (bgm.paused) {
     playMusic();
+  } else {
+    bgm.pause();
+    localStorage.setItem('bgmPlaying', '0');
+    updateButton();
   }
-  updateMusicButton();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  updateMusicButton();
-  
-  // 1. Manual Toggle
+  updateButton();
   const btn = document.getElementById('music-toggle');
   if (btn) btn.addEventListener('click', toggleMusic);
 
-  // 2. Start music when she clicks ANY link or button on the page
-  const interactionEvents = ['click', 'touchstart'];
-  const startOnInteraction = () => {
-    playMusic();
-    interactionEvents.forEach(event => window.removeEventListener(event, startOnInteraction));
-  };
-
-  interactionEvents.forEach(event => window.addEventListener(event, startOnInteraction));
+  // Auto-play attempt on first click anywhere (like "Open Notes")
+  window.addEventListener('click', () => {
+    if (localStorage.getItem('bgmPlaying') !== '0') {
+        playMusic();
+    }
+  }, { once: true });
 });
