@@ -43,9 +43,9 @@ draw();
 
 // Background music controls
 const bgm = new Audio();
-bgm.src = '/assets/bgm.mp3';
+bgm.src = 'assets/bgm.mp3'; // ENSURE THIS FOLDER AND FILE EXIST ON GITHUB
 bgm.loop = true;
-bgm.volume = 0.28;
+bgm.volume = 0.40; 
 bgm.preload = 'auto';
 let musicPlaying = false;
 
@@ -53,49 +53,41 @@ function updateMusicButton() {
   const btn = document.getElementById('music-toggle');
   if (!btn) return;
   btn.textContent = musicPlaying ? '🔊 Music ON' : '🔈 Music OFF';
-  btn.setAttribute('aria-pressed', musicPlaying ? 'true' : 'false');
 }
 
 function playMusic() {
-  bgm.play().then(() => {
-    musicPlaying = true;
-    updateMusicButton();
-    localStorage.setItem('bgmPlaying', '1');
-  }).catch(() => {
-    // Autoplay blocked; wait for user interaction
-    musicPlaying = false;
-    updateMusicButton();
-  });
-}
-
-function pauseMusic() {
-  bgm.pause();
-  musicPlaying = false;
-  updateMusicButton();
-  localStorage.setItem('bgmPlaying', '0');
+  if (!musicPlaying) {
+    bgm.play().then(() => {
+      musicPlaying = true;
+      updateMusicButton();
+      localStorage.setItem('bgmPlaying', '1');
+    }).catch(e => console.log("Playback waiting for interaction."));
+  }
 }
 
 function toggleMusic() {
-  if (musicPlaying) pauseMusic(); else playMusic();
+  if (musicPlaying) {
+    bgm.pause();
+    musicPlaying = false;
+  } else {
+    playMusic();
+  }
+  updateMusicButton();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  updateMusicButton();
+  
+  // 1. Manual Toggle
   const btn = document.getElementById('music-toggle');
-  if (!btn) return;
-  btn.addEventListener('click', () => {
-    toggleMusic();
-  });
+  if (btn) btn.addEventListener('click', toggleMusic);
 
-  // Restore preference if user previously enabled music
-  const saved = localStorage.getItem('bgmPlaying');
-  if (saved === '1') {
-    // Many browsers block autoplay; try to play on first user gesture
-    const tryPlay = () => {
-      playMusic();
-      window.removeEventListener('click', tryPlay);
-    };
-    window.addEventListener('click', tryPlay);
-  } else {
-    updateMusicButton();
-  }
+  // 2. Start music when she clicks ANY link or button on the page
+  const interactionEvents = ['click', 'touchstart'];
+  const startOnInteraction = () => {
+    playMusic();
+    interactionEvents.forEach(event => window.removeEventListener(event, startOnInteraction));
+  };
+
+  interactionEvents.forEach(event => window.addEventListener(event, startOnInteraction));
 });
